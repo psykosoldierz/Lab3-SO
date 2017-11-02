@@ -23,19 +23,20 @@ typedef struct Grilla{
 typedef struct Coordenada{
 	int x, y;
 }Coordenada;
-x
+
 typedef struct Hebra{
 	int idSimple;
 	pthread_t idReal;
 	int palabraInicio;
 	int cantidadPalabras;
+	int *posiciones;
 }Hebra;
 
 //****VARIABLES GLOBALES****/
 
 extern Hebra* dHebras;
 extern char** listaPalabras;
-extern SopaLetras* sp;
+extern Grilla* grilla;
 
 /***********************/
 #endif

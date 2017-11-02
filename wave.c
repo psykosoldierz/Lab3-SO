@@ -76,13 +76,14 @@ ParamConsola recibirParametrosEntrada(int argc, char **argv){
 }
 void distribuirGrilla(int n, int cHebras)
 {
-	int base,i,k,celdas = n * n;
+	int base,i,j,k,celdas = n * n;
 	int resto = celdas % cHebras;
 	int celdasPorHebra = celdas/cHebras;
 	int cCeldas[cHebras];
 	for (k = 0; k < cHebras; k++)
 	{
-		// SI SOBRAN CELDAS DE LE SUMARA 1 CELDA A CADA HEBRA
+		// SI SOBRAN CELDAS DE LE SUMARA 1 CELDA A CADA HEBRA HASTA QUE
+		// NO QUEDEN CELDAS SIN ASIGNACION
 		if(k < resto)
 		{
 			cCeldas[k] = celdasPorHebra + 1;
@@ -91,6 +92,7 @@ void distribuirGrilla(int n, int cHebras)
 			cCeldas[k] = celdasPorHebra;
 		}
 	}
+	// SE CONSTRUYEN LOS ARREGLOS DE POSICIONES PARA CADA HEBRA
 	for(i = 0 ; i < cHebras; i++)
 	{
 		if(i == 0)
@@ -101,13 +103,14 @@ void distribuirGrilla(int n, int cHebras)
 		{
 			base = base + cCeldas[i-1];
 		}
-		int posiciones[celdasPorHebra];
 
+		int posiciones[celdasPorHebra];
 		for(j = 0 ; j < cCeldas[i] ; j++)
 		{
 			posiciones[j] = base + j;
 		}
 		//asignar el arreglo de celdas a la hebra que seria "posiciones"
+		dHebras[i].posiciones = posiciones;
 	}
 }
 
@@ -115,7 +118,7 @@ void inicializarMutexs(Grilla* sp){
 	sp->mutexsPos = (pthread_mutex_t***)malloc(sizeof(pthread_mutex_t**)*sp->n);
 	int i,j;
 	for (i=0 ; i < sp->n ; i++){
-		sp->mutexsPos[i] = (pthread_mutex_t**)malloc(sizeof(pthread_mutex_t*)*sp->m);
+		sp->mutexsPos[i] = (pthread_mutex_t**)malloc(sizeof(pthread_mutex_t*)*sp->n);
 		for (j=0 ; j < sp->n ; j++){
 			sp->mutexsPos[i][j] = (pthread_mutex_t*)malloc(3*sizeof(pthread_mutex_t));
 			pthread_mutex_init(&sp->mutexsPos[i][j][0],NULL);
@@ -125,9 +128,44 @@ void inicializarMutexs(Grilla* sp){
 	}
 }
 
+int bloquearPosiciones(char* palabra, int numFila, int numColumna){
+	/*
+	int tamano = strlen(palabra);
+	int i;
+	for (i=0 ; i< tamano ; i++){
+		if (pthread_mutex_trylock(&sp->mutexsPos[numFila][numColumna+i]) != 0){
+			//UNA POSICION BLOQUEADA
+			return i;
+		}
+	}
+	*/
+	return -1;
+}
+
+void desbloquearPosiciones(int cantDesbloquear, int numFila, int numColumna){
+	/*
+	int i;
+	for (i = 0 ; i <cantDesbloquear ; i++){
+		pthread_mutex_unlock(&sp->mutexsPos[numFila][numColumna+i]);
+	}
+	*/
+}
+
+void lanzarHebras(int numeroHilos){
+	int i, stat;
+	pthread_t* thLanzados=(pthread_t*)malloc(sizeof(pthread_t)*numeroHilos);
+	for (i=0 ; i<numeroHilos ; i++){
+		dHebras[i].idSimple = i;
+		//stat = pthread_create(&thLanzados[i], NULL, funcionn, &dHebras[i].idSimple);
+		printf("Se lanza hebra %d, stat %d\n",i,stat);
+		dHebras[i].idReal = thLanzados[i];
+		//printf("state i%d = %d\n",i,stat);
+	}
+}
+
 int* desparametrizar(int numero, int columnas)
 {
-	int par[2];
+	int *par = (int*)calloc(2,sizeof(int));
 	int aux = numero;
 	int x = 0, y;
 	while (aux > columnas)
@@ -145,9 +183,9 @@ int* desparametrizar(int numero, int columnas)
 Grilla* crearMatriz(int n){
 	Grilla *b = (Grilla*)malloc(sizeof(Grilla));
 
-	if (b != NULL){
 		b->n = n;
 		b->matriz = (float***)malloc(n*sizeof(float**));
+		if (b != NULL){
 
 		if (b->matriz!=NULL)
 		{

@@ -90,4 +90,10 @@ void algoritmoSchoedinger(Grilla* g);
 
 void ecuacionSchoedinger(Grilla* grilla, int t);
 
+int bloquearPosiciones(char* palabra, int numFila, int numColumna);
+
+void desbloquearPosiciones(int cantDesbloquear, int numFila, int numColumna);
+
+void lanzarHebras(int numeroHilos);
+
 #endif
