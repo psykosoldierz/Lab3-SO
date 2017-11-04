@@ -3,12 +3,11 @@
 #include <pthread.h>
 
 typedef struct ParamConsola{
-	char *ivalue; //nombre archivo de entrada
-	int h; //numero de hebras
-	int c; //cantidad de palabras
-	int n; //ancho de matriz
-	int m; //largo de matriz
-	char *svalue; //nombre archivo de salida
+	int N; //ancho de matriz
+	int T; // pasos
+	int H; //numero de hebras
+	int t; //iteracion de salida
+	char *fvalue; //archivo de salida
 	int d,statusCode; // d-> bandera si indica mostrar resultado por pantalla
 	//statusCode : indica si parametros fueron ingresados correctamente
 }ParamConsola;

@@ -36,12 +36,12 @@ Salida: 1-> numero valido
 */
 int validarNumeroHilos(int numeroHilos);
 
-/*Verificar si archivo de entrada existe
+/*Verificar si el nombre del archivo de salida existe
 Etrada: nombre de arhcivo de entrada
 Salida: 1-> archivo existe
 		0-> archivo no existe
 */
-int validarArchivoEntrada(char* nombrearchivo);
+int validarArchivoSalida(char* nombreArchivo);
 
 /*Verifica si las dimensiones de la matriz son validas
 debe ser mayor o igual a 2x2
@@ -49,23 +49,16 @@ Entrada: n numFIla y m numColumna
 Salida: 1-> dimensiones validas
 0-> dimensiones no validas
 */
-int validarDimensionesMatriz(int n, int m);
+int validarDimensionesMatriz(int n);
 
-/*Se espera que al menos el numero de palabras sea 1
-Este parametro por consola luego no es tomado en cuenta
-Entrda: numero de palabras ingresado por consola
+/*
+Entrda: numero de pasos
 Salida: 1->valido
 		0->no valido
 */
-int validarNumeroPalabras(int n);
+int validarNumeroPasos(int numeroPasos);
 
-/*Verifica si el nombre del archivo de salida fue ingresado
-Se verifica si es distinto de null
-Entrada: char* que contiene nombre del archivo de salida
-Salida: 1-> nombre es distinto de null y valido
-		0-> no se ingresó
-*/
-int validarNombreArchivoSalida(char* nombreSalida);
+int validarNumeroIteracion(int numeroIteracion);
 
 /*Verifica que todos los parametros pro consola sean validos
 Entrada: parametros recibidos por consola

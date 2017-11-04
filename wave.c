@@ -9,37 +9,36 @@
 #include "structs.h"
 #include "wave.h"
 
+Hebra* dHebras;
+Grilla* grilla;
+
 ParamConsola recibirParametrosEntrada(int argc, char **argv){
 	ParamConsola param;
-	param.ivalue = NULL;
-	param.svalue = NULL;
-	param.n = 0;
-	param.h = 0;
-	param.m = 0;
-	param.c = 0;
+	param.fvalue = NULL;
+	param.N = 0;
+	param.T = 0;
+	param.H = 0;
+	param.t = 0;
 	param.d = 0; //bandera: indica si mostrar resultados por pantalla
 	opterr = 0;
 	int d;
 
-	while ((d = getopt (argc, argv, "i:n:c:p:d")) != -1){
+	while ((d = getopt (argc, argv, "N:T:H:t:d:f")) != -1){
 		switch (d){
-			case 'i':
-				param.ivalue = optarg;
+			case 'f':
+				param.fvalue = optarg;
 				break;
-			case 'h':
-				sscanf(optarg, "%d", &param.h);
+			case 'N':
+				sscanf(optarg, "%d", &param.N);
 				break;
-			case 'n':
-				sscanf(optarg, "%d", &param.n);
+			case 'T':
+				sscanf(optarg, "%d", &param.T);
 				break;
-			case 'c':
-				sscanf(optarg, "%d", &param.c);
+			case 'H':
+				sscanf(optarg, "%d", &param.H);
 				break;
-			case 'm':
-				sscanf(optarg, "%d", &param.m);
-				break;
-			case 's':
-				param.svalue = optarg;
+			case 't':
+				sscanf(optarg, "%d", &param.t);
 				break;
 			case 'd':
 				param.d = 1;
@@ -74,6 +73,72 @@ ParamConsola recibirParametrosEntrada(int argc, char **argv){
 	param.statusCode=0;
 	return param;
 }
+
+int validarArchivoSalida(char* nombreArchivo){
+	FILE* archivo = fopen(nombreArchivo, "r");
+	if (archivo == NULL){
+		return 1;
+	}else{
+		printf("Archivo de entrada existente\n");
+		return 0;
+	}
+}
+
+int validarDimensionesMatriz(int n){
+	if (n > 1){
+		return 1;
+	}else{
+		printf("Dimensiones mínimas 8x8\n");
+		return 0;
+	}
+}
+
+int validarNumeroHilos(int numeroHilos){
+	if (numeroHilos > 0){
+		return 1;
+	}
+	else{
+		printf("CANTIDAD DE HILOS NO VÁLIDA, MINIMO 1 HILO\n");
+		return 0;
+	}
+}
+
+int validarNumeroPasos(int numeroPasos){
+	if (numeroPasos > 1){
+		return 1;
+	}
+	else{
+		printf("CANTIDAD DE PASOS NO VÁLIDO, MINIMO 2 \n");
+		return 0;
+	}
+}
+
+int validarNumeroIteracion(int numeroIteracion){
+	if (numeroIteracion > 0){
+		return 1;
+	}
+	else{
+		printf("CANTIDAD DE ITERACIONES NO VÁLIDA, MINIMO 1 ITERACION\n");
+		return 0;
+	}
+}
+
+int validarEntradas(ParamConsola param)
+{
+		int archivo = validarArchivoSalida(param.fvalue);
+		int hilos = validarNumeroHilos(param.H);
+		int palabras = validarNumeroPasos(param.T);
+		int dimension = validarNumeroIteracion(param.t);
+		int salida = validarDimensionesMatriz(param.N);
+		if(archivo == 1 && hilos == 1 && palabras == 1 && dimension == 1 && salida == 1)
+		{
+			return 1;
+		}else
+		{
+			return 0;
+		}
+}
+
 void distribuirGrilla(int n, int cHebras)
 {
 	int base,i,j,k,celdas = n * n;
