@@ -9,8 +9,41 @@
 #include "structs.h"
 #include "wave.h"
 
-Hebra* dHebras;
-Grilla* grilla;
+int barrier_init(barrier_t *bp, int count)
+{
+	int i;
+	if (count < 1) {
+		printf("Error: numero de hebras debe ser mayor que 1\n");
+		exit(-1);
+	}
+	bp->maxcnt = count;
+	bp->sbp = &bp->sb[0];
+	for (i=0; i < 2; i++) {
+		struct _sb *sbp = &(bp->sb[i]);
+		sbp->runners = count;
+		pthread_mutex_init(&sbp->mutex, NULL);
+		pthread_cond_init(&sbp->cond, NULL);
+	}
+	return(0);
+}
+
+int barrier_wait(barrier_t *bp)
+{
+	struct _sb *sbp = bp->sbp;
+	pthread_mutex_lock(&sbp->mutex);
+	if (sbp->runners == 1) {
+		if (bp->maxcnt != 1) {
+		sbp->runners = bp->maxcnt;
+		bp->sbp = (bp->sbp == &bp->sb[0])? &bp->sb[1] : &bp->sb[0];
+		pthread_cond_broadcast(&sbp->cond);
+		}
+	} else {
+	sbp->runners--;
+	while (sbp->runners != bp->maxcnt)
+		pthread_cond_wait(&sbp->cond, &sbp->mutex);
+	}
+	pthread_mutex_unlock(&sbp->mutex);
+}
 
 ParamConsola recibirParametrosEntrada(int argc, char **argv){
 	ParamConsola param;
@@ -139,111 +172,6 @@ int validarEntradas(ParamConsola param)
 		}
 }
 
-void distribuirGrilla(int n, int cHebras)
-{
-	int base,i,j,k,celdas = n * n;
-	int resto = celdas % cHebras;
-	int celdasPorHebra = celdas/cHebras;
-	int cCeldas[cHebras];
-	for (k = 0; k < cHebras; k++)
-	{
-		// SI SOBRAN CELDAS DE LE SUMARA 1 CELDA A CADA HEBRA HASTA QUE
-		// NO QUEDEN CELDAS SIN ASIGNACION
-		if(k < resto)
-		{
-			cCeldas[k] = celdasPorHebra + 1;
-		}else
-		{
-			cCeldas[k] = celdasPorHebra;
-		}
-	}
-	// SE CONSTRUYEN LOS ARREGLOS DE POSICIONES PARA CADA HEBRA
-	for(i = 0 ; i < cHebras; i++)
-	{
-		if(i == 0)
-		{
-			base = 0;
-		}
-		else
-		{
-			base = base + cCeldas[i-1];
-		}
-
-		int posiciones[celdasPorHebra];
-		for(j = 0 ; j < cCeldas[i] ; j++)
-		{
-			posiciones[j] = base + j;
-		}
-		//asignar el arreglo de celdas a la hebra que seria "posiciones"
-		dHebras[i].posiciones = posiciones;
-	}
-}
-
-void inicializarMutexs(Grilla* sp){
-	sp->mutexsPos = (pthread_mutex_t***)malloc(sizeof(pthread_mutex_t**)*sp->n);
-	int i,j;
-	for (i=0 ; i < sp->n ; i++){
-		sp->mutexsPos[i] = (pthread_mutex_t**)malloc(sizeof(pthread_mutex_t*)*sp->n);
-		for (j=0 ; j < sp->n ; j++){
-			sp->mutexsPos[i][j] = (pthread_mutex_t*)malloc(3*sizeof(pthread_mutex_t));
-			pthread_mutex_init(&sp->mutexsPos[i][j][0],NULL);
-			pthread_mutex_init(&sp->mutexsPos[i][j][1],NULL);
-			pthread_mutex_init(&sp->mutexsPos[i][j][2],NULL);
-		}
-	}
-}
-
-int bloquearPosiciones(char* palabra, int numFila, int numColumna){
-	/*
-	int tamano = strlen(palabra);
-	int i;
-	for (i=0 ; i< tamano ; i++){
-		if (pthread_mutex_trylock(&sp->mutexsPos[numFila][numColumna+i]) != 0){
-			//UNA POSICION BLOQUEADA
-			return i;
-		}
-	}
-	*/
-	return -1;
-}
-
-void desbloquearPosiciones(int cantDesbloquear, int numFila, int numColumna){
-	/*
-	int i;
-	for (i = 0 ; i <cantDesbloquear ; i++){
-		pthread_mutex_unlock(&sp->mutexsPos[numFila][numColumna+i]);
-	}
-	*/
-}
-
-void lanzarHebras(int numeroHilos){
-	int i, stat;
-	pthread_t* thLanzados=(pthread_t*)malloc(sizeof(pthread_t)*numeroHilos);
-	for (i=0 ; i<numeroHilos ; i++){
-		dHebras[i].idSimple = i;
-		//stat = pthread_create(&thLanzados[i], NULL, funcionn, &dHebras[i].idSimple);
-		printf("Se lanza hebra %d, stat %d\n",i,stat);
-		dHebras[i].idReal = thLanzados[i];
-		//printf("state i%d = %d\n",i,stat);
-	}
-}
-
-int* desparametrizar(int numero, int columnas)
-{
-	int *par = (int*)calloc(2,sizeof(int));
-	int aux = numero;
-	int x = 0, y;
-	while (aux > columnas)
-	{
-		aux = aux - columnas;
-		x++;
-	}
-	y = aux - 1;
-	par[0] = x;
-	par[1] = y;
-	return par;
-}
-
 
 Grilla* crearMatriz(int n){
 	Grilla *b = (Grilla*)malloc(sizeof(Grilla));
@@ -279,45 +207,17 @@ Grilla* crearMatriz(int n){
 		printf("Error al asignar memoria\n");
 	return b;
 }
-/*
-float** copiarMatriz(Grilla* grilla){
-	float** matriz = (float**)malloc(sizeof(float*)*grilla->n);
-	int i,j;
-	if (matriz != NULL){
-		for (int i=0 ; i < grilla->n ; i++){
-			matriz[i] = (float*)malloc(grilla->n*sizeof(float));
-			if (matriz[i] != NULL){
-				for (j=0 ; j < grilla->n ; j++){
-					matriz[i][j] = grilla->matriz[i][j];
-				}
-			}else{
-				printf("Error al asignar memoria\n");
-			}
-		}
-	}else{
-		printf("Error al asignar memoria\n");
-	}
-	return matriz;
-}*/
-
-void copiarCapaMatriz(Grilla* grilla, int desde, int hacia){
-	int i,j;
-	for (i=0 ; i<grilla->n ; i++){
-		for (j=0 ; j<grilla->n ; j++){
+void copiarCapaMatrizParalelizado(Grilla* grilla, int desde, int hacia, Coordenada coorInicial, int cantidadPosiciones){
+	int i=coorInicial.x, j=coorInicial.y, contador=0;
+	for (i ; i<grilla->n-1 && contador<cantidadPosiciones; i++){
+		for (j ; j<grilla->n -1 && contador<cantidadPosiciones; j++){
 			grilla->matriz[i][j][hacia] = grilla->matriz[i][j][desde];
+			contador++;
 		}
+		j=1;
 	}
 }
-/*
-void liberarMatriz(float*** matriz, int n){
-	int i,j;
-	for (i=0 ; i<n ; i++){
-		for (j=0 ; j<n ; j++){
-			free(matriz[i][j]);
-		}
-	}
-	free(matriz);
-}*/
+
 void mostrarMatriz(float*** matriz, int n){
 	int i,j;
 
@@ -346,16 +246,20 @@ void mostrarMatriz(float*** matriz, int n){
 	}
 }
 
-void ponerUnos(Grilla* grilla){
-	int i,j;
-	int polinomio;
-	float c=1.0, dt=0.1, dd=2.0;
-	for (i=1 ; i<grilla->n -1 ; i++){
-		for (j=1 ; j<grilla->n -1 ; j++){
-			//polinomio =  matriz[i+1][j]+ matriz[i-1][j] + matriz[i][j-1] + matriz[i][j+1] - 4*matriz[i][j];
-			grilla->matriz[i][j][0] = 1;
-		}
+int calcularPosicionComienzo(int* posicionesPorHilo, int numeroHilo){
+	int i;
+	int suma=0;
+	for (i=0 ; i<numeroHilo - 1 ; i++){
+		suma += posicionesPorHilo[i];
 	}
+	return suma;
+}
+
+Coordenada obtenerPosicionInicial(int posicionInicial, int dimension){
+	Coordenada coor;
+	coor.x = (posicionInicial / (dimension-2))+1;
+	coor.y = (posicionInicial % (dimension-2))+1;
+	return coor;
 }
 
 void condicionInicial(Grilla* grilla){
@@ -369,56 +273,140 @@ void condicionInicial(Grilla* grilla){
 	}
 }
 
-void condicionTiempoUno(Grilla* g){
+void distribuirMatriz(int numeroHilos, int dimension, Hebra* dHebra){
+	int numeroPosiciones = dimension*dimension - 4* (dimension-1);
+	int i;
+	int* posicionesPorHilo = (int*)malloc(sizeof(int)*numeroHilos);
+	for (i=0 ; i<numeroHilos ; i++){
+		posicionesPorHilo[i] = 0;
+	}
+
+	int cuociente = numeroPosiciones/numeroHilos;
+	int sobrantes = numeroPosiciones - cuociente*numeroHilos;
+	i=0;
+	while (sobrantes > 0){
+		posicionesPorHilo[i]=cuociente+1;
+		sobrantes--;
+		i++;
+	}
+	while (i<numeroHilos){
+		posicionesPorHilo[i]=cuociente;
+		i++;
+	}
+
+	for (i=0 ; i < numeroHilos ; i++){
+		dHebra[i].posicionInicio = calcularPosicionComienzo(posicionesPorHilo, i+1);
+		dHebra[i].cantidadPosiciones = posicionesPorHilo[i];
+		dHebras[i].coordenadaInicio = obtenerPosicionInicial(dHebras[i].posicionInicio, dimension);
+	}
+}
+
+void condicionInicialParalelizado(Grilla* g, Coordenada coorInicio, int cantidadPosiciones){
+	int n = g->n;
+	int i = coorInicio.x;
+	int j = coorInicio.y;
+	int contador = 0;
+	while (i < n-1 && contador < cantidadPosiciones){
+		if (0.4*n < i && i < 0.6*n){
+			while (j < n-1 && contador < cantidadPosiciones){
+				if (0.4*n < j && j < 0.6*n){
+					g->matriz[i][j][0] = 20;
+				}
+				j++;
+				contador++;
+			}
+			
+			//actualizar contador
+		}else{
+			contador += n-j-1;
+		}
+
+		j=1;
+		i++;
+	}
+}
+
+
+void condicionTiempoUnoParalelizado(Grilla* g, Coordenada coorInicial, int cantidadPosiciones){
 	//float** matriz = copiarMatriz(grilla);
-	int i,j;
+	int i=coorInicial.x, j=coorInicial.y, contador=0;
 	float polinomio;
 	float c=1.0, dt=0.1, dd=2.0;
-	for (i=1 ; i<g->n -1 ; i++){
-		for (j=1 ; j<g->n -1 ; j++){
+	for (i ; i<g->n -1 && contador<cantidadPosiciones; i++){
+		for (j ; j<g->n -1  && contador < cantidadPosiciones; j++){
 			polinomio =  g->matriz[i+1][j][1]+ g->matriz[i-1][j][1] + g->matriz[i][j-1][1] + g->matriz[i][j+1][1] - 4*g->matriz[i][j][1];
 			g->matriz[i][j][0] = g->matriz[i][j][1]+ (pow(c,2)/2) * (pow(dt/dd,2)) * polinomio;
+			contador++;
 		}
+		j=1;
 	}
 }
 
-void algoritmoSchoedinger(Grilla* g){
+void algoritmoSchoedingerParalelizado(Grilla* g, Coordenada coorInicial, int cantidadPosiciones){
 	//float** matriz = copiarMatriz(grilla);
-	int i,j;
+	int i=coorInicial.x,j=coorInicial.y, contador=0;
 	float polinomio;
 	float c=1.0, dt=0.1, dd=2.0;
-	for (i=1 ; i<g->n -1 ; i++){
-		for (j=1 ; j<g->n -1 ; j++){
+	for (i ; i<g->n -1 && contador<cantidadPosiciones; i++){
+		for (j ; j<g->n -1  && contador < cantidadPosiciones; j++){
 			polinomio =  g->matriz[i+1][j][1]+ g->matriz[i-1][j][1] + g->matriz[i][j-1][1] + g->matriz[i][j+1][1] - 4*g->matriz[i][j][1];
 			g->matriz[i][j][0] =2* g->matriz[i][j][1] - g->matriz[i][j][2] + (pow(c,2)) * (pow(dt/dd,2)) * polinomio;
+			contador++;
 		}
+		j=1;
 	}
 }
 
-void ecuacionSchoedinger(Grilla* grilla, int t){
-	//t = 0
-	printf("t=0\n");
-	condicionInicial(grilla);
+void* ecuacionSchoedingerHebra(void* id){
+	int* id_h = (int*) id;
+	condicionInicialParalelizado(grilla,dHebras[*id_h].coordenadaInicio, dHebras[*id_h].cantidadPosiciones);
+	printf("hebra : %d esperando en barrera\n",*id_h);
+	barrier_wait(&barreras[0]);
 	int contador = 1;
-	mostrarMatriz(grilla->matriz, grilla->n);
+	int numBarrera = 1;
+	printf("pasaron barrera\n");
+	//mostrarMatriz(grilla->matriz, grilla->n);
+	
 	//t=1
 	if (contador <= t){
 		printf("t=1\n");
-		copiarCapaMatriz(grilla,1,2);
-		copiarCapaMatriz(grilla,0,1);
-		condicionTiempoUno(grilla);
-		mostrarMatriz(grilla->matriz, grilla->n);
+		copiarCapaMatrizParalelizado(grilla,1,2,dHebras[*id_h].coordenadaInicio, dHebras[*id_h].cantidadPosiciones);
+		copiarCapaMatrizParalelizado(grilla,0,1,dHebras[*id_h].coordenadaInicio, dHebras[*id_h].cantidadPosiciones);
+		barrier_wait(&barreras[numBarrera]);
+		condicionTiempoUnoParalelizado(grilla,dHebras[*id_h].coordenadaInicio, dHebras[*id_h].cantidadPosiciones);
+		barrier_wait(&barreras[numBarrera+1]);
+		//mostrarMatriz(grilla->matriz, grilla->n);
 		contador++;
+		numBarrera+=2;
 	}
 	while(contador <= t){
 		printf("t=%d\n",contador);
-		copiarCapaMatriz(grilla,1,2);
-		copiarCapaMatriz(grilla,0,1);
-		algoritmoSchoedinger(grilla);
-		mostrarMatriz(grilla->matriz, grilla->n);
+		copiarCapaMatrizParalelizado(grilla,1,2,dHebras[*id_h].coordenadaInicio, dHebras[*id_h].cantidadPosiciones);
+		copiarCapaMatrizParalelizado(grilla,0,1,dHebras[*id_h].coordenadaInicio, dHebras[*id_h].cantidadPosiciones);
+		barrier_wait(&barreras[numBarrera]);
+		algoritmoSchoedingerParalelizado(grilla,dHebras[*id_h].coordenadaInicio, dHebras[*id_h].cantidadPosiciones);
+		barrier_wait(&barreras[numBarrera+1]);
+		//mostrarMatriz(grilla->matriz, grilla->n);
 		contador++;
+		numBarrera+=2;
 	}
+}
 
+void esperarHilos(int numeroHilos){
+	int i=0;
+	while(i < numeroHilos)
+	{
+		pthread_join(dHebras[i].idReal,NULL);
+		i++;
+	}
+}
+
+void inicializarBarreras(int numeroBarreras, int numHilos){
+	int i;
+	barreras = (barrier_t*)malloc(sizeof(barrier_t)*numeroBarreras);
+	for (i=0 ;i<numeroBarreras ; i++){
+		barrier_init(&barreras[i], numHilos);
+	}
 }
 
 

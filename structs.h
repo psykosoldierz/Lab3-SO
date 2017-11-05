@@ -2,6 +2,18 @@
 #define _STRUCTS_H_
 #include <pthread.h>
 
+struct _sb {
+pthread_cond_t cond;
+pthread_mutex_t mutex;
+int runners; // numero de hebras que aun no llegan a la barrera
+};
+
+typedef struct {
+int maxcnt; // numero de hebras participando en la barrera
+struct _sb sb[2];
+struct _sb *sbp;
+} barrier_t;
+
 typedef struct ParamConsola{
 	int N; //ancho de matriz
 	int T; // pasos
@@ -26,16 +38,18 @@ typedef struct Coordenada{
 typedef struct Hebra{
 	int idSimple;
 	pthread_t idReal;
-	int palabraInicio;
-	int cantidadPalabras;
-	int *posiciones;
+	int posicionInicio;
+	int cantidadPosiciones;
+	Coordenada coordenadaInicio;
 }Hebra;
 
 //****VARIABLES GLOBALES****/
 
 extern Hebra* dHebras;
-extern char** listaPalabras;
 extern Grilla* grilla;
+extern int* estadoHebras;
+extern barrier_t* barreras;
+extern int t;
 
 /***********************/
 #endif
