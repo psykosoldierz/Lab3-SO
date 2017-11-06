@@ -47,9 +47,8 @@ typedef struct Hebra{
 
 extern Hebra* dHebras;
 extern Grilla* grilla;
-extern int* estadoHebras;
 extern barrier_t* barreras;
-extern int t;
+extern int t; //tiempo
 
 /***********************/
 #endif

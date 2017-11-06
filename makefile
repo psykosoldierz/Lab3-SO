@@ -1,14 +1,14 @@
 CC=gcc
 route=
 
-all: main.o funct_main.o
-	$(CC) main.o funct_main.o -o lab2 -pthread -Wall -I.
-	rm main.o funct_main.o
+all: wave.o wave_funct.o
+	$(CC) wave.o wave_funct.o -o wave -pthread -lm -Wall -I.
+	rm wave.o wave_funct.o
 
-main.o:  $(route)main.c
-	$(CC) -c $(route)main.c
+main.o:  $(route)wave.c
+	$(CC) -c $(route)wave.c
 
-funct_main.o: $(route)funct_main.c
-	$(CC) -c $(route)funct_main.c
+funct_main.o: $(route)wave_funct.c
+	$(CC) -c $(route)wave_funct.c
 
 
