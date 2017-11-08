@@ -58,7 +58,7 @@ ParamConsola recibirParametrosEntrada(int argc, char **argv){
 	opterr = 0;
 	int d;
 
-	while ((d = getopt (argc, argv, "N:T:H:t:d:f")) != -1){
+	while ((d = getopt (argc, argv, "N:T:H:t:f:d")) != -1){
 		switch (d){
 			case 'f':
 				param.fvalue = optarg;
@@ -110,11 +110,10 @@ ParamConsola recibirParametrosEntrada(int argc, char **argv){
 }
 
 int validarArchivoSalida(char* nombreArchivo){
-	FILE* archivo = fopen(nombreArchivo, "r");
-	if (archivo == NULL){
+	if (nombreArchivo != NULL){
 		return 1;
 	}else{
-		printf("Archivo de entrada existente\n");
+		printf("ERROR ARCHIVO DE SALIDA NO ESPECIFICADO\n");
 		return 0;
 	}
 }
@@ -139,21 +138,21 @@ int validarNumeroHilos(int numeroHilos){
 }
 
 int validarNumeroPasos(int numeroPasos){
-	if (numeroPasos > 1){
+	if (numeroPasos >= 0){
 		return 1;
 	}
 	else{
-		printf("CANTIDAD DE PASOS NO VÁLIDO, MINIMO 2 \n");
+		printf("CANTIDAD DE PASOS NO VÁLIDO, MINIMO 0 \n");
 		return 0;
 	}
 }
 
-int validarNumeroIteracion(int numeroIteracion){
-	if (numeroIteracion > 0){
+int validarNumeroIteracion(int numeroIteracion, int numeroPasos){
+	if (numeroIteracion >= 0 && numeroIteracion <= numeroPasos){
 		return 1;
 	}
 	else{
-		printf("CANTIDAD DE ITERACIONES NO VÁLIDA, MINIMO 1 ITERACION\n");
+		printf("CANTIDAD DE ITERACIONES NO VÁLIDA\n");
 		return 0;
 	}
 }
@@ -163,7 +162,7 @@ int validarEntradas(ParamConsola param)
 		int archivo = validarArchivoSalida(param.fvalue);
 		int hilos = validarNumeroHilos(param.H);
 		int palabras = validarNumeroPasos(param.T);
-		int dimension = validarNumeroIteracion(param.t);
+		int dimension = validarNumeroIteracion(param.t, param.T);
 		int salida = validarDimensionesMatriz(param.N);
 		if(archivo == 1 && hilos == 1 && palabras == 1 && dimension == 1 && salida == 1)
 		{
@@ -230,7 +229,7 @@ void mostrarMatriz(float*** matriz, int n){
 		}
 		printf("\n");
 	}
-
+	/*
 	printf("Instante t-1\n");
 	for (i=0 ; i < n ; i++){
 		for (j = 0 ; j < n ; j++){
@@ -245,7 +244,7 @@ void mostrarMatriz(float*** matriz, int n){
 			printf("%f|",matriz[i][j][2]);
 		}
 		printf("\n");
-	}
+	}*/
 }
 
 int calcularPosicionComienzo(int* posicionesPorHilo, int numeroHilo){
@@ -347,41 +346,89 @@ void algoritmoSchoedingerParalelizado(Grilla* g, Coordenada coorInicial, int can
 	}
 }
 
+void imprimirFila(float* fila, int n){
+	int i;
+	for (i=0 ; i <n ; i++){
+		printf("%f|", fila[i]);
+	}
+	printf("\n");
+
+}
+
+void matrizArchivo(float ***matriz,int n, char *nombreArchivo)
+{
+	float* fila;
+	int i,j;
+	FILE* archivo = fopen(nombreArchivo, "w");
+	for(i = 0; i < n; i++)
+	{
+		fila = (float*)malloc(sizeof(float)*n);
+		for (j=0 ; j < n; j++){
+			fila[j] = matriz[i][j][0];
+		}
+		fwrite(fila,sizeof(float),n,archivo);
+		imprimirFila(fila, grilla->n);
+		free(fila);	
+	}
+}
+
 void* ecuacionSchoedingerHebra(void* id){
 	int* id_h = (int*) id;
 	condicionInicialParalelizado(grilla,dHebras[*id_h].coordenadaInicio, dHebras[*id_h].cantidadPosiciones);
 	printf("hebra : %d esperando en barrera\n",*id_h);
-	barrier_wait(&barreras[0]);
+	barrier_wait(&barrera);
+	if(t==0)
+		{
+			//HEBRA UNO SE ENCARGA DE COPIAR LA MATRIZ
+			if(*id_h == 1){
+				mostrarMatriz(grilla->matriz, grilla->n);
+				matrizArchivo(grilla->matriz,grilla->n, nombreSalida);
+			}
+			barrier_wait(&barrera);
+	}
 	int contador = 1;
 	int numBarrera = 1;
-	printf("pasaron barrera\n");
+
 	//mostrarMatriz(grilla->matriz, grilla->n);
-	if(t==T)
-	{
-		//preguntar si es la hebra numero 1
-			// copiar en la matriz
-			//barrera
-	}
+	
 	//t=1
-	if (contador <= t){
+	if (contador <= T){
 		printf("t=1\n");
 		copiarCapaMatrizParalelizado(grilla,1,2,dHebras[*id_h].coordenadaInicio, dHebras[*id_h].cantidadPosiciones);
 		copiarCapaMatrizParalelizado(grilla,0,1,dHebras[*id_h].coordenadaInicio, dHebras[*id_h].cantidadPosiciones);
-		barrier_wait(&barreras[numBarrera]);
-		condicionTiempoUnoParalelizado(grilla,dHebras[*id_h].coordenadaInicio, dHebras[*id_h].cantidadPosiciones);
-		barrier_wait(&barreras[numBarrera+1]);
+		barrier_wait(&barrera);
+		condicionTiempoUnoParalelizado(grilla,dHebras[*id_h].coordenadaInicio, dHebras[*id_h].cantidadPosiciones);		
+		barrier_wait(&barrera);
+		if(t==contador)
+		{
+			//HEBRA UNO SE ENCARGA DE COPIAR LA MATRIZ
+			if(*id_h == 1){
+				mostrarMatriz(grilla->matriz, grilla->n);
+				matrizArchivo(grilla->matriz,grilla->n, nombreSalida);
+			}
+			barrier_wait(&barrera);
+		}
+
 		//mostrarMatriz(grilla->matriz, grilla->n);
 		contador++;
 		numBarrera+=2;
 	}
-	while(contador <= t){
+	while(contador <= T){
 		printf("t=%d\n",contador);
 		copiarCapaMatrizParalelizado(grilla,1,2,dHebras[*id_h].coordenadaInicio, dHebras[*id_h].cantidadPosiciones);
 		copiarCapaMatrizParalelizado(grilla,0,1,dHebras[*id_h].coordenadaInicio, dHebras[*id_h].cantidadPosiciones);
-		barrier_wait(&barreras[numBarrera]);
+		barrier_wait(&barrera);
 		algoritmoSchoedingerParalelizado(grilla,dHebras[*id_h].coordenadaInicio, dHebras[*id_h].cantidadPosiciones);
-		barrier_wait(&barreras[numBarrera+1]);
-		//mostrarMatriz(grilla->matriz, grilla->n);
+		barrier_wait(&barrera);
+		if(t==contador)
+		{
+			//HEBRA UNO SE ENCARGA DE COPIAR LA MATRIZ
+			if(*id_h == 1){
+				mostrarMatriz(grilla->matriz, grilla->n);
+				matrizArchivo(grilla->matriz,grilla->n, nombreSalida);
+			}
+			barrier_wait(&barrera);
+		}
 		contador++;
 		numBarrera+=2;
 	}
@@ -397,16 +444,13 @@ void esperarHilos(int numeroHilos){
 }
 
 void inicializarBarreras(int numeroBarreras, int numHilos){
-	int i;
-	barreras = (barrier_t*)malloc(sizeof(barrier_t)*numeroBarreras);
-	for (i=0 ;i<numeroBarreras ; i++){
-		barrier_init(&barreras[i], numHilos);
-	}
+	barrier_init(&barrera, numHilos);
 }
 
-void inicializarVariablesGlobales(int numHilos, int dimension, int valorIteraciones, int valorIteracionSalida){
+void inicializarVariablesGlobales(int numHilos, int dimension, int valorIteraciones, int valorIteracionSalida, char* salida){
 	T = valorIteraciones;
 	t = valorIteracionSalida;
+	nombreSalida = salida;
 	dHebras = (Hebra*)malloc(sizeof(Hebra)*numHilos);
 	inicializarBarreras(2*t+1, numHilos);
 	grilla = crearMatriz(dimension);
@@ -421,15 +465,5 @@ void lanzarHilos(int numHilos){
 		//printf("Se lanza hebra %d, stat %d\n",i,stat);
 		dHebras[i].idReal = thLanzados[i];
 		//printf("state i%d = %d\n",i,stat);
-	}
-}
-
-void matrizArchivo(float **matriz, int n, char *nombreArchivo)
-{
-	int i;
-	FILE* archivo = fopen(nombreArchivo, "w");
-	for(i = 0; i < n; i++)
-	{
-		fwrite(matriz[i],sizeof(float),n,archivo);
 	}
 }

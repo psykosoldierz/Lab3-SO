@@ -53,7 +53,7 @@ Etrada: numero de interaciones
 Salida:1->valido
 		0-> no valido
 */
-int validarNumeroIteracion(int numeroIteracion);
+int validarNumeroIteracion(int numeroIteracion, int numeroPasos);
 
 /*Verifica que todos los parametros pro consola sean validos
 Entrada: parametros recibidos por consola
@@ -110,6 +110,12 @@ posiciones
 */
 void condicionTiempoUnoParalelizado(Grilla* g, Coordenada coorInicial, int cantidadPosiciones);
 
+/* Procedimiento que copia la matriz resultante en un archivo en formato no-binario
+Entrada: la matriz, la cantidad de filas de la matriz y el nombre del archivo de
+salida
+*/
+void matrizArchivo(float ***matriz, int n, char *nombreArchivo);
+
 /* Procedimiento que realiza la condicion tiempo uno de la ecuacion de Schroedinger
 Enetrada: La Grilla, la coordenada de inicio de la hebra y la cantidad de
 posiciones
@@ -138,17 +144,12 @@ void inicializarBarreras(int numeroBarreras, int numHilos);
 principal
 Entrada: cantidad de hilos, dimension de la matriz
 */
-void inicializarVariablesGlobales(int numHilos, int dimension, int valorIteraciones, int valorIteracionSalida);
+void inicializarVariablesGlobales(int numHilos, int dimension, int valorIteraciones, int valorIteracionSalida, char *nombreSalida);
 
 /* Procedimiento que inicia la ejecucion de los hijos del programa
 Entrada: la cantidad de hilos a lanzar
 */
 void lanzarHilos(int numHilos);
 
-/* Procedimiento que copia la matriz resultante en un archivo en formato no-binario
-Entrada: la matriz, la cantidad de filas de la matriz y el nombre del archivo de
-salida
-*/
-void matrizArchivo(float **matriz, int n, char *nombreArchivo);
 
 #endif
