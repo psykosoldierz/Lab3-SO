@@ -306,7 +306,7 @@ void condicionInicialParalelizado(Grilla* g, Coordenada coorInicio, int cantidad
 				j++;
 				contador++;
 			}
-			
+
 			//actualizar contador
 		}else{
 			contador += n-j-1;
@@ -356,7 +356,12 @@ void* ecuacionSchoedingerHebra(void* id){
 	int numBarrera = 1;
 	printf("pasaron barrera\n");
 	//mostrarMatriz(grilla->matriz, grilla->n);
-	
+	if(t==T)
+	{
+		//preguntar si es la hebra numero 1
+			// copiar en la matriz
+			//barrera
+	}
 	//t=1
 	if (contador <= t){
 		printf("t=1\n");
@@ -399,8 +404,9 @@ void inicializarBarreras(int numeroBarreras, int numHilos){
 	}
 }
 
-void inicializarVariablesGlobales(int numHilos, int dimension, int valorIteraciones){
-	t = valorIteraciones;
+void inicializarVariablesGlobales(int numHilos, int dimension, int valorIteraciones, int valorIteracionSalida){
+	T = valorIteraciones;
+	t = valorIteracionSalida;
 	dHebras = (Hebra*)malloc(sizeof(Hebra)*numHilos);
 	inicializarBarreras(2*t+1, numHilos);
 	grilla = crearMatriz(dimension);
@@ -411,10 +417,19 @@ void lanzarHilos(int numHilos){
 	pthread_t* thLanzados=(pthread_t*)malloc(sizeof(pthread_t)*numHilos);
 	for (i=0 ; i<numHilos ; i++){
 		dHebras[i].idSimple = i;
-		stat = pthread_create(&thLanzados[i], NULL, ecuacionSchoedingerHebra, &dHebras[i].idSimple);	
+		stat = pthread_create(&thLanzados[i], NULL, ecuacionSchoedingerHebra, &dHebras[i].idSimple);
 		//printf("Se lanza hebra %d, stat %d\n",i,stat);
 		dHebras[i].idReal = thLanzados[i];
 		//printf("state i%d = %d\n",i,stat);
-	} 
+	}
 }
 
+void matrizArchivo(float **matriz, int n, char *nombreArchivo)
+{
+	int i;
+	FILE* archivo = fopen(nombreArchivo, "w");
+	for(i = 0; i < n; i++)
+	{
+		fwrite(matriz[i],sizeof(float),n,archivo);
+	}
+}

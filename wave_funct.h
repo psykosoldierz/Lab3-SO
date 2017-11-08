@@ -92,22 +92,63 @@ Salida: coordenada inicial (x,y)
 */
 Coordenada obtenerPosicionInicial(int posicionInicial, int dimension);
 
+/* Distribuye la cantidad de posiciones de la matriz, dependiendo de la cantidad
+de hilos declaradas
+Entrada: numero de hilos, dimension de la matriz y la estructura hebra
+*/
 void distribuirMatriz(int numeroHilos, int dimension, Hebra* dHebra);
 
+/* Procedimiento que realiza la condicion inicial de la ecuacion de Schroedinger
+Enetrada: La Grilla, la coordenada de inicio de la hebra y la cantidad de
+posiciones
+*/
 void condicionInicialParalelizado(Grilla* g, Coordenada coorInicio, int cantidadPosiciones);
 
+/* Procedimiento que realiza la condicion tiempo uno de la ecuacion de Schroedinger
+Enetrada: La Grilla, la coordenada de inicio de la hebra y la cantidad de
+posiciones
+*/
 void condicionTiempoUnoParalelizado(Grilla* g, Coordenada coorInicial, int cantidadPosiciones);
 
+/* Procedimiento que realiza la condicion tiempo uno de la ecuacion de Schroedinger
+Enetrada: La Grilla, la coordenada de inicio de la hebra y la cantidad de
+posiciones
+*/
 void algoritmoSchoedingerParalelizado(Grilla* g, Coordenada coorInicial, int cantidadPosiciones);
 
+/* Realiza la ejecucion completa de la ecuacion de Schroedinger sincronizando
+la ejecucion de los hilos
+Entrada: el id de un hilo
+*/
 void* ecuacionSchoedingerHebra(void* id);
 
+/* Espera que todas las hebras hayan realizado la ejecucion planificada
+Entrada: la cantidad de hilos
+*/
 void esperarHilos(int numeroHilos);
 
+/* Procedimiento que inicializa las barreras necesarias para la ejecucion del
+programa
+Entrada: Cantidad de barreras que seran utilizadas en la ejecucion de el Procedimiento
+ecuacionSchoedingerHebra y el numero de hilos
+*/
 void inicializarBarreras(int numeroBarreras, int numHilos);
 
-void inicializarVariablesGlobales(int numHilos, int dimension, int valorIteraciones);
+/* Procedimiento que inicializa las variables globales para la ejecucion del programa
+principal
+Entrada: cantidad de hilos, dimension de la matriz
+*/
+void inicializarVariablesGlobales(int numHilos, int dimension, int valorIteraciones, int valorIteracionSalida);
 
+/* Procedimiento que inicia la ejecucion de los hijos del programa
+Entrada: la cantidad de hilos a lanzar
+*/
 void lanzarHilos(int numHilos);
+
+/* Procedimiento que copia la matriz resultante en un archivo en formato no-binario
+Entrada: la matriz, la cantidad de filas de la matriz y el nombre del archivo de
+salida
+*/
+void matrizArchivo(float **matriz, int n, char *nombreArchivo);
 
 #endif

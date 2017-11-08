@@ -13,9 +13,11 @@
 Hebra* dHebras;
 Grilla* grilla;
 barrier_t* barreras;
-int t; //tiempo
+int t; //uteracion de salida
+int T; // Numero de pasos
 
 void main(int argc, char **argv){
+
 	clock_t start = clock();
 	ParamConsola param = recibirParametrosEntrada(argc, argv);
 
@@ -23,7 +25,7 @@ void main(int argc, char **argv){
 	if(validarEntradas(param)){
 
 		printf("Parametros validos\n");
-		inicializarVariablesGlobales(param.H, param.N, param.t);
+		inicializarVariablesGlobales(param.H, param.N, param.T, param.t);
 		distribuirMatriz(param.H, param.N, dHebras);
 		lanzarHilos(param.H);
 		esperarHilos(param.H);
@@ -33,4 +35,5 @@ void main(int argc, char **argv){
 		printf("Parametros invalidos, programa abortado\n");
 
 	}
+
 }
