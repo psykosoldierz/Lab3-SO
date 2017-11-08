@@ -21,7 +21,8 @@ void main(int argc, char **argv){
 
 	//clock_t start = clock();
 	ParamConsola param = recibirParametrosEntrada(argc, argv);
-
+	printf("salida: %s\n",param.fvalue);
+	printf("t: %d\n",param.t);
 	//VERIFICAR SI ENTRADAS SON VÁLIDAS
 	if(validarEntradas(param)){
 

@@ -110,7 +110,7 @@ ParamConsola recibirParametrosEntrada(int argc, char **argv){
 }
 
 int validarArchivoSalida(char* nombreArchivo){
-	if (nombreArchivo != NULL){
+	if (nombreArchivo != NULL && nombreArchivo[0] != '-'){
 		return 1;
 	}else{
 		printf("ERROR ARCHIVO DE SALIDA NO ESPECIFICADO\n");
@@ -153,7 +153,7 @@ int validarNumeroIteracion(int numeroIteracion, int numeroPasos){
 	}
 	else{
 		printf("CANTIDAD DE ITERACIONES NO VÁLIDA\n");
-		return 0;
+		return 1;
 	}
 }
 
@@ -367,7 +367,7 @@ void matrizArchivo(float ***matriz,int n, char *nombreArchivo)
 			fila[j] = matriz[i][j][0];
 		}
 		fwrite(fila,sizeof(float),n,archivo);
-		imprimirFila(fila, grilla->n);
+		//imprimirFila(fila, grilla->n);
 		free(fila);	
 	}
 }
@@ -375,12 +375,10 @@ void matrizArchivo(float ***matriz,int n, char *nombreArchivo)
 void* ecuacionSchoedingerHebra(void* id){
 	int* id_h = (int*) id;
 	condicionInicialParalelizado(grilla,dHebras[*id_h].coordenadaInicio, dHebras[*id_h].cantidadPosiciones);
-	printf("hebra : %d esperando en barrera\n",*id_h);
 	barrier_wait(&barrera);
-	if(t==0)
-		{
+	if(t==0){
 			//HEBRA UNO SE ENCARGA DE COPIAR LA MATRIZ
-			if(*id_h == 1){
+			if(*id_h == 0){
 				mostrarMatriz(grilla->matriz, grilla->n);
 				matrizArchivo(grilla->matriz,grilla->n, nombreSalida);
 			}
@@ -402,7 +400,7 @@ void* ecuacionSchoedingerHebra(void* id){
 		if(t==contador)
 		{
 			//HEBRA UNO SE ENCARGA DE COPIAR LA MATRIZ
-			if(*id_h == 1){
+			if(*id_h == 0){
 				mostrarMatriz(grilla->matriz, grilla->n);
 				matrizArchivo(grilla->matriz,grilla->n, nombreSalida);
 			}
@@ -423,7 +421,7 @@ void* ecuacionSchoedingerHebra(void* id){
 		if(t==contador)
 		{
 			//HEBRA UNO SE ENCARGA DE COPIAR LA MATRIZ
-			if(*id_h == 1){
+			if(*id_h == 0){
 				mostrarMatriz(grilla->matriz, grilla->n);
 				matrizArchivo(grilla->matriz,grilla->n, nombreSalida);
 			}
